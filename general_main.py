@@ -7,7 +7,7 @@ Created on Sat Aug 08 22:31:09 2015
 from basic_functions import *
 
 if __name__ == '__main__':
-    max_duration = 45
+    max_duration = 100
     ads = data_sampler(100)
     winners = set(select_winners(ads, max_duration))
     losers = set(ads) - winners
