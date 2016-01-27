@@ -51,14 +51,14 @@ def select_winners(ads, max_duration):
     from cplex import Cplex
     prob = Cplex()
     prob.variables.add([ad['bid'] for ad in ads], types=prob.variables.type.binary * len(ads))
-    prob.linear_constraints.add([[range(len(ads)), [ad['duration']for ad in ads]]], 'L', [max_duration])
+    prob.linear_constraints.add([[range(len(ads)), [ad['duration'] for ad in ads]]], 'L', [max_duration])
     prob.objective.set_sense(prob.objective.sense.maximize)
     prob.solve()
     winners = set()
     losers = set()
     sol = prob.solution.get_values()
     for i, ad in enumerate(ads):
-        if sol[i] == 1:
+        if sol[i] > 0.5:
             winners.add(ad)
         else:
             losers.add(ad)
