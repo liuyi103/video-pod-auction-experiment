@@ -9,45 +9,74 @@ import numpy as np
 import copy
 import pulp as pp
 
+
 class Ad:
-    def __init__(self, is_power2 = False):
+    def __init__(self, is_power2 = False, bid = -1, duration = -1):
+        if bid!=-1:
+            self.bid = bid
+            self.price = bid
+            self.duration = duration
+            return
         if not is_power2:
             self.duration = np.random.randint(low = 10, high = 30)
         else:
             self.duration = 2 ** np.random.randint(low = 1, high = 8)
         self.bid = (np.random.random() + 1) * self.duration
         self.price = self.bid
+
     def __getitem__(self, key):
         exec 'ans = self.' + key
         return ans
+
     def __setitem__(self, key, item):
         exec 'self.' + key + ' = ' + str(item)
+
     def get(self, key, default):
         try:
             exec 'return self.' + key
         except:
             return default
 
+
 def data_sampler(n_ad, is_power2 = False):
     '''Returns a list of n_ad ads.'''
     return [Ad(is_power2) for i in range(n_ad)]
 
+
 def select_winners(ads, max_duration):
-    '''Computes the set of winners that has the maximum total price.
-    The numbers of winners are returned.'''
-    import pulp as pp
-    prob = pp.LpProblem('select winners', pp.LpMaximize)
-    x = pp.LpVariable.dict('x', range(len(ads)), 0, 1.5, pp.LpInteger)
-    prob += sum([ad['bid'] * x[i] for i, ad in enumerate(ads)])
-    prob += sum([ad['duration'] * x[i] for i, ad in enumerate(ads)])\
-            <= max_duration
+    '''
+    Computes the set of winners that has the maximum total price.
+    The numbers of winners are returned.
+    '''
+    from cplex import Cplex
+    prob = Cplex()
+    prob.variables.add([ad['bid'] for ad in ads], types=prob.variables.type.binary * len(ads))
+    prob.linear_constraints.add([[range(len(ads)), [ad['duration']for ad in ads]]], 'L', [max_duration])
+    prob.objective.set_sense(prob.objective.sense.maximize)
     prob.solve()
-    ans = []
-    for i,ad in enumerate(ads):
-        if pp.value(x[i]) == 1:
-            ans.append(ad)
-    return ans
-    
+    winners = set()
+    losers = set()
+    sol = prob.solution.get_values()
+    for i, ad in enumerate(ads):
+        if sol[i] == 1:
+            winners.add(ad)
+        else:
+            losers.add(ad)
+    return winners, losers
+    # import pulp as pp
+    # prob = pp.LpProblem('select winners', pp.LpMaximize)
+    # x = pp.LpVariable.dict('x', range(len(ads)), 0, 1.5, pp.LpInteger)
+    # prob += sum([ad['bid'] * x[i] for i, ad in enumerate(ads)])
+    # prob += sum([ad['duration'] * x[i] for i, ad in enumerate(ads)])\
+    #         <= max_duration
+    # prob.solve()
+    # ans = []
+    # for i,ad in enumerate(ads):
+    #     if pp.value(x[i]) == 1:
+    #         ans.append(ad)
+    # return ans
+
+
 def total_price(ads):
     # if numbers == 'all':
     #     return sum([ad['price'] for ad in ads])
@@ -55,6 +84,7 @@ def total_price(ads):
     for ad in ads:
         ans += ad['price']
     return ans
+
 
 def get_coutour(ads, max_duration, is_losers = True):
     '''
@@ -64,19 +94,9 @@ def get_coutour(ads, max_duration, is_losers = True):
     :param is_losers: whether he ads are losers
     :return: a list of (corresponding_ads, total_price)
     '''
-    super_ad = None # a blank place-taker
-    if not is_losers:
-        total_duration = sum([ad.duration for ad in ads])
-        gap = max_duration -total_duration
-        if gap > 0:
-            super_ad = Ad(0)
-            super_ad.duration = gap
-            super_ad.bid = 0
-            super_ad.price = 0
-            ads.append(super_ad)
-    ans = [[[], 0] for i in range(max_duration + 1)]
+    ans = [[[], 0] for i in xrange(max_duration + 1)]
     for ad in ads:
-        for duration in range(max_duration, 0, -1):
+        for duration in xrange(max_duration, 0, -1):
             if ad['duration'] > duration:
                 break
             tmp = ans[duration - ad['duration']][1] + ad.price
@@ -87,11 +107,8 @@ def get_coutour(ads, max_duration, is_losers = True):
                     (tmp < ans[duration][1] or len(ans[duration][0]) == 0):
                 ans[duration][1] = tmp
                 ans[duration][0] = copy.copy(ans[duration - ad['duration']][0]) + [ad]
-    if not is_losers:
-        for i in range(1 + max_duration):
-            if super_ad in ans[i][0]:
-                ans[i][0].remove(super_ad)
     return ans
+
 
 def get_solution(winners, constraints):
     '''
