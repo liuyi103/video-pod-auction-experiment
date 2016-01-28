@@ -15,10 +15,11 @@ def solveit(max_duration, ads):
     # add a fake winner if needed.
     total_dur = sum([winner.duration for winner in winners])
     if total_dur < max_duration:
-        winners.add(Ad(bid = 0, duration =max_duration - total_dur))
+        winners.add(Ad(bid = 0.0001, duration =max_duration - total_dur))
 
     # get the upper contour for the losers
     bar = [i[1] for i in get_coutour(losers, max_duration, True)]
+    print len(winners)
 
     winners = sorted(winners, key = lambda winner: (winner.duration, winner.bid))
     id2num = {id(winner):k for k, winner in enumerate(winners)}
@@ -60,7 +61,9 @@ def solveit(max_duration, ads):
             ads, min_value = tmp
             if len(ads) == 0:
                 continue
-            if min_value < bar[k] - 1e-4:
+            if min_value < bar[k]:
+                tmp = [id2num[id(ad)] for ad in ads]
+                print prob.linear_constraints.get_num()
                 prob.linear_constraints.add([[[id2num[id(ad)] for ad in ads], [1] * len(ads)]],\
                     ['G'], [bar[k]])
                 finish = False
@@ -132,28 +135,26 @@ def solveit(max_duration, ads):
 #     return sum(prob.solution.get_values()), len(winners), n_iteration
 
 if __name__ == '__main__':
-    n_iters = []
-    times = []
-    for i in range(100):
-        max_duration = 500
-        ads = data_sampler(200)
-        f = file('data.txt', 'w')
-        for ad in ads:
-            f.write('%lf %lf\n'%(ad['bid'], ad['duration']))
-        st_time = time.time()
-        revenue, n_winners, n_iter = solveit(max_duration, ads)
-        en_time = time.time()
-        n_iters.append(n_iter)
-        times.append(en_time - st_time)
-        print revenue, n_winners
-    print n_iters, times
-    # max_duration = 500
-    # ads = []
-    # f = file('data.txt', 'r')
-    # for line in f:
-    #     bid, duration = line.split()
-    #     bid, duration = float(bid), int(float(duration))
-    #     ads.append(Ad(bid = bid, duration=duration))
-    # solveit(max_duration, ads)
-
-
+    # n_iters = []
+    # times = []
+    # for i in range(100):
+    #     max_duration = 500
+    #     ads = data_sampler(200)
+    #     f = file('data.txt', 'w')
+    #     for ad in ads:
+    #         f.write('%lf %lf\n'%(ad['bid'], ad['duration']))
+    #     st_time = time.time()
+    #     revenue, n_winners, n_iter = solveit(max_duration, ads)
+    #     en_time = time.time()
+    #     n_iters.append(n_iter)
+    #     times.append(en_time - st_time)
+    #     print revenue, n_winners
+    # print n_iters, times
+    max_duration = 500
+    ads = []
+    f = file('data-bad.txt', 'r')
+    for line in f:
+        bid, duration = line.split()
+        bid, duration = float(bid), int(float(duration))
+        ads.append(Ad(bid = bid, duration=duration))
+    solveit(max_duration, ads)

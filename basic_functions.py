@@ -103,11 +103,11 @@ def get_coutour(ads, max_duration, is_losers = True):
             tmp = ans[duration - ad['duration']][1] + ad.price
             if is_losers and (tmp > ans[duration][1]):
                 ans[duration][1] = tmp
-                ans[duration][0] = copy.copy(ans[duration - ad['duration']][0]) + [ad]
+                ans[duration][0] = ans[duration - ad['duration']][0] + [ad]
             if not is_losers and (duration == ad.duration or ans[duration - ad['duration']][1] > 0) and\
                     (tmp < ans[duration][1] or len(ans[duration][0]) == 0):
                 ans[duration][1] = tmp
-                ans[duration][0] = copy.copy(ans[duration - ad['duration']][0]) + [ad]
+                ans[duration][0] = ans[duration - ad['duration']][0] + [ad]
     return ans
 
 
