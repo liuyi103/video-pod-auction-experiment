@@ -57,6 +57,7 @@ def select_winners(ads, max_duration):
     winners = set()
     losers = set()
     sol = prob.solution.get_values()
+    print sol
     for i, ad in enumerate(ads):
         if sol[i] > 0.5:
             winners.add(ad)
